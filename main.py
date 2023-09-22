@@ -45,7 +45,8 @@ def get_time_group(due: datetime, last_group_index: int, groups: list):
 
 
 async def homeworks(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    undone_list = HomeworkManager().query_undone()
+    chat_id = update.effective_chat.id
+    undone_list = HomeworkManager(chat_id).query_undone()
     msg = ''
     last_group_index = 0
     groups = get_groups()
@@ -58,7 +59,8 @@ async def homeworks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         msg += hw.to_markdown() + '\n'
         print(hw)
-    await context.bot.send_message(chat_id=update.effective_chat.id, parse_mode="MarkdownV2", text=msg)
+
+    await context.bot.send_message(chat_id=chat_id, parse_mode="MarkdownV2", text=msg)
     return
 
 
@@ -69,7 +71,7 @@ if __name__ == '__main__':
         level=logging.INFO
     )
 
-    application = ApplicationBuilder().token(Settings.get_appsettings()['botToken']).build()
+    application = ApplicationBuilder().token(Settings.bot_token()).build()
     start_handler = CommandHandler('homeworks', homeworks)
     application.add_handler(start_handler)
 

@@ -6,9 +6,10 @@ import datetime as dt
 
 class HomeworkManager:
 
-    def __init__(self):
-        self.notion_client = Settings.get_notion_client()
-        self.database_id = Settings.get_database_id("homeworks")
+    def __init__(self, chat_id: int):
+        self.settings = Settings(chat_id)
+        self.notion_client = self.settings.get_notion_client()
+        self.database_id = self.settings.get_database_id("homeworks")
 
     def query_undone(self) -> list:
         undone = []
@@ -44,7 +45,6 @@ class HomeworkManager:
             type_name = type_select['name'] if type_select is not None else 'Sin tipo'
 
             url = properties['URL']['url']
-
 
             undone.append(Homework(name, subject, due, type_name, url))
 
