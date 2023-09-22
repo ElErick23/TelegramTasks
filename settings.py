@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 from notion_client import Client
 
@@ -21,3 +22,6 @@ class Settings:
 
     def get_database_id(self, key: str) -> str:
         return users[self.chat_id]['databases'][key]
+
+    def get_reminder_time(self) -> time.struct_time:
+        return time.strptime(users[self.chat_id]['reminder']['time'], '%H:%M')

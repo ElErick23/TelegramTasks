@@ -3,6 +3,8 @@ import logging
 import datetime as dt
 from datetime import datetime
 
+import telegram.ext
+
 from notion.managers.homework.homeworkManager import HomeworkManager
 from settings import Settings
 from telegram import Update
@@ -44,8 +46,7 @@ def get_time_group(due: datetime, last_group_index: int, groups: list):
     return None
 
 
-async def homeworks(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
+async def homeworks(context: ContextTypes.DEFAULT_TYPE, chat_id: int):
     undone_list = HomeworkManager(chat_id).query_undone()
     msg = ''
     last_group_index = 0
@@ -58,10 +59,28 @@ async def homeworks(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg += f'\n`----------| `*_{label}_*` |----------`\n'
 
         msg += hw.to_markdown() + '\n'
-        print(hw)
 
     await context.bot.send_message(chat_id=chat_id, parse_mode="MarkdownV2", text=msg)
-    return
+
+
+async def command_homeworks(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    await homeworks(context, chat_id)
+
+
+async def job_homeworks(context: ContextTypes.DEFAULT_TYPE):
+    job = context.job
+    await homeworks(context, job.chat_id)
+
+
+async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.effective_message.chat_id
+    reminder = Settings(chat_id).get_reminder_time()
+    #today = dt.datetime.today().replace(hour=reminder.tm_hour, minute=reminder.tm_min, tzinfo=dt.timezone(dt.timedelta(hours=-6)))
+    today = dt.datetime.now().replace(tzinfo=dt.timezone(dt.timedelta(hours=-6))) + dt.timedelta(seconds=10)
+    context.job_queue.run_repeating(job_homeworks, dt.timedelta(days=1), first=today, name=str(chat_id), chat_id=chat_id)
+
+    await update.effective_message.reply_text(f"Next reminder at {today}")
 
 
 if __name__ == '__main__':
@@ -72,7 +91,7 @@ if __name__ == '__main__':
     )
 
     application = ApplicationBuilder().token(Settings.bot_token()).build()
-    start_handler = CommandHandler('homeworks', homeworks)
-    application.add_handler(start_handler)
+    application.add_handler(CommandHandler('homeworks', command_homeworks))
+    application.add_handler(CommandHandler('set_timer', set_timer))
 
     application.run_polling()
